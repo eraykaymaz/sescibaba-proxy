@@ -5,120 +5,129 @@
 <title>🔥 Hit Generator – Otomatik Ürün Çekme</title>
 
 <style>
-    body { background:#111; color:white; font-family:Arial; padding:20px; }
-    table { width:100%; border-collapse:collapse; margin-top:20px; }
-    td, th { border:1px solid #444; padding:8px; text-align:left; }
-    input { width:100%; padding:6px; background:#222; color:white; border:1px solid #555; }
-    .header { font-size:30px; margin-bottom:20px; text-align:center; color:#ff355b; }
+    body {
+        background:#0c0c0e;
+        color:#fff;
+        font-family: Arial;
+        padding:20px;
+    }
+    table {
+        width:100%;
+        border-collapse: collapse;
+        margin-top:20px;
+    }
+    th, td {
+        border:1px solid #333;
+        padding:10px;
+        font-size:14px;
+    }
+    input {
+        width:100%;
+        padding:7px;
+        background:#1a1a1a;
+        border:1px solid #444;
+        color:#fff;
+    }
 </style>
-</head>
 
+</head>
 <body>
 
-<div class="header">🔥 Hit Generator – Otomatik Ürün Çekme</div>
+<h1>🔥 Hit Generator – Otomatik Ürün Çekme</h1>
 
-<b style="color:#7cf;">HTML Proxy:</b>  
-https://test.eray-kaymaz.workers.dev/?url=
+<b>HTML Proxy:</b>  
+<span style="color:#58a6ff">https://test.eray-kaymaz.workers.dev/?url=</span>
 
 <table>
-<thead>
-<tr>
-    <th>#</th>
-    <th>Ürün Linki</th>
-    <th>Ürün Adı</th>
-    <th>Resim URL</th>
-    <th>Fiyat</th>
-</tr>
-</thead>
-
-<tbody id="rows"></tbody>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Ürün Linki</th>
+            <th>Ürün Adı</th>
+            <th>Resim URL</th>
+            <th>Fiyat</th>
+        </tr>
+    </thead>
+    <tbody id="rows">
+        <!-- 15 satır -->
+        <script>
+            for (let i = 1; i <= 15; i++) {
+                document.write(`
+                <tr>
+                    <td>${i}</td>
+                    <td><input class="url" placeholder="Ürün linki"></td>
+                    <td><input class="name"></td>
+                    <td><input class="img"></td>
+                    <td><input class="price"></td>
+                </tr>
+                `);
+            }
+        </script>
+    </tbody>
 </table>
 
 <script>
-/* ==========================================================
-   🌟 Cloudflare Worker → DOMParser → Sescibaba ürün parse
-   ========================================================== */
-async function fetchProduct(url) {
+// -----------------------------
+//  ÜRÜN VERİSİ ÇEKME MOTORU
+// -----------------------------
+async function fetchProduct(url){
     try {
-        const proxy = "https://test.eray-kaymaz.workers.dev/?url=" + encodeURIComponent(url);
+        const proxyUrl = "https://test.eray-kaymaz.workers.dev/?url=" + encodeURIComponent(url);
 
-        const response = await fetch(proxy);
-        const html = await response.text();
+        const html = await fetch(proxyUrl).then(r => r.text());
 
+        // DOM parser
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, "text/html");
 
-        // ÜRÜN ADI
-        const title =
-            doc.querySelector("#product-title")?.textContent.trim() ||
-            "Bulunamadı";
+        // Ürün başlığı
+        const title = doc.querySelector("#product-title")?.innerText.trim() || "Bulunamadı";
 
-        // FİYAT
-        const price =
-            doc.querySelector(".product-price")?.textContent.trim() ||
-            "Bulunamadı";
+        // Ürün resim
+        const img = doc.querySelector("img[data-image]")?.src
+                 || doc.querySelector(".swiper-slide img")?.src
+                 || "Bulunamadı";
 
-        // RESİM
-        const image =
-            doc.querySelector("#gallery-01 img")?.getAttribute("src") ||
-            doc.querySelector(".product-detail-images img")?.src ||
-            doc.querySelector("img")?.src ||
-            "Bulunamadı";
+        // Fiyat
+        let price = doc.querySelector(".product-price")?.innerText.trim();
+        if (!price) price = "Bulunamadı";
 
-        return { title, image, price };
+        return { title, img, price };
 
-    } catch (error) {
-        return {
-            title: "Hata",
-            image: "Hata",
-            price: "Hata"
-        };
+    } catch (e) {
+        return { title:"Hata", img:"Hata", price:"Hata" };
     }
 }
 
-/* ============================================
-   🌟 Tabloyu oluştur (111 satır)
-   ============================================ */
-function createTable() {
-    let table = "";
-    for (let i = 1; i <= 111; i++) {
-        table += `
-        <tr>
-            <td>${i}</td>
-            <td><input id="url_${i}" placeholder="Ürün linki"></td>
-            <td><input id="title_${i}" readonly></td>
-            <td><input id="image_${i}" readonly></td>
-            <td><input id="price_${i}" readonly></td>
-        </tr>
-        `;
-    }
-    document.getElementById("rows").innerHTML = table;
+// -----------------------------
+//  OTOMATİK DOLDURMA
+// -----------------------------
+document.querySelectorAll(".url").forEach((input, index) => {
+    input.addEventListener("change", async () => {
 
-    // Her URL inputuna değişiklik dinleyicisi ekle
-    for (let i = 1; i <= 111; i++) {
-        document.getElementById("url_" + i).addEventListener("change", () => loadProduct(i));
-    }
-}
+        const url = input.value.trim();
+        if (!url) return;
 
-/* ============================================
-   🌟 Tek satır ürünü çek
-   ============================================ */
-async function loadProduct(row) {
-    const url = document.getElementById("url_" + row).value.trim();
-    if (!url) return;
+        // Satır elemanlarını bul
+        const row = input.parentElement.parentElement;
+        const nameField = row.querySelector(".name");
+        const imgField  = row.querySelector(".img");
+        const priceField = row.querySelector(".price");
 
-    document.getElementById("title_" + row).value = "Yükleniyor...";
-    document.getElementById("image_" + row).value = "";
-    document.getElementById("price_" + row).value = "";
+        // Yükleniyor göstergesi
+        nameField.value = "Yükleniyor...";
+        imgField.value = "Yükleniyor...";
+        priceField.value = "Yükleniyor...";
 
-    const data = await fetchProduct(url);
+        // Verileri çek
+        const data = await fetchProduct(url);
 
-    document.getElementById("title_" + row).value = data.title;
-    document.getElementById("image_" + row).value = data.image;
-    document.getElementById("price_" + row).value = data.price;
-}
-
-createTable();
+        // Doldur
+        nameField.value = data.title;
+        imgField.value = data.img;
+        priceField.value = data.price;
+    });
+});
 </script>
 
 </body>
