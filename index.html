@@ -1,95 +1,40 @@
-<!DOCTYPE html><html lang="tr"><head>
-<meta charset="UTF-8">
-<title>Hit Generator Test</title>
-<style>
-body{background:#000;color:#fff;font-family:Arial;padding:20px;}
-h1{text-align:center;color:#ff3355;}
-table{width:100%;border-collapse:collapse;margin-top:10px;}
-th,td{border:1px solid #333;padding:6px;font-size:14px;}
-input{width:100%;padding:5px;background:#111;border:1px solid #444;color:#fff;}
-.cat{color:#6cf;font-weight:bold;}
-</style>
-</head><body>
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Stok Test</title></head>
+<body>
 
-<h1>Hit Generator (Test)</h1>
-<p><b>Proxy:</b> https://test.eray-kaymaz.workers.dev/?url=</p>
+<input id="u" style="width:500px;font-size:18px" placeholder="ürün linki">
+<button onclick="test()">Kontrol Et</button>
 
-<table>
-<tr>
-<th>#</th>
-<th>Kategori</th>
-<th>Link</th>
-<th>Ad</th>
-<th>Resim</th>
-<th>Fiyat</th>
-<th>Stok</th>
-</tr>
-
-<tbody id="t"></tbody>
-</table>
+<pre id="sonuc" style="font-size:20px;margin-top:20px;color:#333"></pre>
 
 <script>
-const proxy="https://test.eray-kaymaz.workers.dev/?url=",
-cats=[
- "Stüdyo Paket Sistemler",
- "Ses Kartları",
- "Mikrofon",
- "Kulaklık",
- "Referans Monitörleri"
-];
-let t=document.getElementById("t");
+async function test(){
+  let url = document.getElementById("u").value;
+  if(!url) return;
 
-// 5 satır oluştur
-for(let i=1;i<=5;i++)
- t.innerHTML+=`
-<tr id=row${i}>
-<td>${i}</td>
-<td class="cat">${cats[i-1]}</td>
-<td><input id=l${i}></td>
-<td><input id=n${i} readonly></td>
-<td><input id=i${i} readonly></td>
-<td><input id=f${i} readonly></td>
-<td><input id=s${i} readonly></td>
-</tr>`;
+  // Worker proxy
+  let proxy = "https://test.eray-kaymaz.workers.dev/?url=";
+  let html = await (await fetch(proxy + encodeURIComponent(url))).text();
 
-// ürün çekme
-document.addEventListener("input",async e=>{
- if(!e.target.id.startsWith("l"))return;
- let r=e.target.id.slice(1),
-     link=document.getElementById("l"+r).value;
- if(!link.startsWith("http"))return;
+  // PRODUCT_DATA JSON'unu bul
+  let match = html.match(/window\['PRODUCT_DATA'\]\s*=\s*(\{.*?\});/s);
 
- ["n","i","f","s"].forEach(x=>document.getElementById(x+r).value="...");
+  if(!match){
+    document.getElementById("sonuc").innerText = "JSON bulunamadı!";
+    return;
+  }
 
- try{
-  let html=await (await fetch(proxy+encodeURIComponent(link))).text(),
-      doc=new DOMParser().parseFromString(html,"text/html");
+  let json = JSON.parse(match[1]);
 
-  // Ad
-  let ad=doc.querySelector("#product-title");
-  document.getElementById("n"+r).value=ad?ad.innerText.trim():"Yok";
+  let stok = json.STOCK === "0" ? "YOK" : "VAR";
+  let text = json.STOCK_TEXT;
 
-  // Görsel
-  let img=doc.querySelector("img[src*='-O']");
-  document.getElementById("i"+r).value=img?img.src:"Yok";
-
-  // Fiyat
-  let price=doc.querySelector(".product-price");
-  let fiyat=price?price.innerText.trim()+" TL":"Yok";
-  document.getElementById("f"+r).value=fiyat;
-
-  // STOK → FİYAT YOKSA STOK YOK
-  let stok = price ? "Var" : "Yok";
-  document.getElementById("s"+r).value = stok;
-
-  // Satır rengi
-  document.getElementById("row"+r).style.background = price ? "#111" : "#400";
-
- }catch(err){
-  ["n","i","f","s"].forEach(x=>document.getElementById(x+r).value="Hata");
-  document.getElementById("row"+r).style.background="#600";
- }
-});
+  document.getElementById("sonuc").innerText =
+    "Stok: " + stok + "\n" +
+    "Metin: " + text;
+}
 </script>
 
-</body></html>
+</body>
+</html>
