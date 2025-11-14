@@ -2,22 +2,23 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>Hit Generator – Otomatik Ürün Çekme</title>
+<title>🔥 Hit Generator – Otomatik Ürün Çekme</title>
 
 <style>
-    body { background:#111; color:#fff; font-family:Arial; padding:20px; }
-    h1 { text-align:center; color:#ff3366; margin-bottom:25px; }
-    table { width:100%; border-collapse: collapse; background:#1b1b1b; font-size:14px; }
-    th, td { padding:10px; border:1px solid #333; }
-    th { background:#222; font-weight:bold; }
-    input { width:100%; padding:6px; border:none; border-radius:4px; background:#2a2a2a; color:#fff; }
+    body { background:#111; color:white; font-family:Arial; padding:20px; }
+    table { width:100%; border-collapse:collapse; margin-top:20px; }
+    td, th { border:1px solid #444; padding:8px; text-align:left; }
+    input { width:100%; padding:6px; background:#222; color:white; border:1px solid #555; }
+    .header { font-size:30px; margin-bottom:20px; text-align:center; color:#ff355b; }
 </style>
 </head>
+
 <body>
 
-<h1>🔥 Hit Generator – Otomatik Ürün Çekme</h1>
+<div class="header">🔥 Hit Generator – Otomatik Ürün Çekme</div>
 
-<p><b>HTML Proxy:</b> https://test.eray-kaymaz.workers.dev/?url=</p>
+<b style="color:#7cf;">HTML Proxy:</b>  
+https://test.eray-kaymaz.workers.dev/?url=
 
 <table>
 <thead>
@@ -29,79 +30,96 @@
     <th>Fiyat</th>
 </tr>
 </thead>
-<tbody>
+
+<tbody id="rows"></tbody>
+</table>
 
 <script>
-const proxy = "https://test.eray-kaymaz.workers.dev/?url=";
-
-// 111 satır oluştur
-for (let i = 1; i <= 111; i++) {
-    document.write(`
-    <tr>
-        <td>${i}</td>
-        <td><input id="link${i}" placeholder="Ürün linki"
-            onblur="fetchProduct(${i})"></td>
-        <td><input id="title${i}"></td>
-        <td><input id="img${i}"></td>
-        <td><input id="price${i}"></td>
-    </tr>
-    `);
-}
-
-async function fetchProduct(row) {
-    let link = document.getElementById("link"+row).value.trim();
-    let titleInput = document.getElementById("title"+row);
-    let imgInput = document.getElementById("img"+row);
-    let priceInput = document.getElementById("price"+row);
-
-    if (!link) return;
-
-    titleInput.value = "Yükleniyor...";
-    imgInput.value   = "Yükleniyor...";
-    priceInput.value = "Yükleniyor...";
-
+/* ==========================================================
+   🌟 Cloudflare Worker → DOMParser → Sescibaba ürün parse
+   ========================================================== */
+async function fetchProduct(url) {
     try {
-        // HTML Worker’dan çek
-        let htmlRes = await fetch(proxy + encodeURIComponent(link));
-        let htmlText = await htmlRes.text();
+        const proxy = "https://test.eray-kaymaz.workers.dev/?url=" + encodeURIComponent(url);
 
-        let parser = new DOMParser();
-        let doc = parser.parseFromString(htmlText, "text/html");
+        const response = await fetch(proxy);
+        const html = await response.text();
 
-        // Ürün adı
-        let title = doc.querySelector("#product-title")?.innerText?.trim();
-        titleInput.value = title || "Bulunamadı";
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
 
-        // Görsel
-        let img = doc.querySelector(".image-inner img")?.src;
-        imgInput.value = img || "Bulunamadı";
+        // ÜRÜN ADI
+        const title =
+            doc.querySelector("#product-title")?.textContent.trim() ||
+            "Bulunamadı";
 
-        // Ürün kodu
-        let sku = doc.querySelector("#supplier-product-code")?.innerText?.trim();
-        if (!sku) {
-            priceInput.value = "SKU yok";
-            return;
-        }
+        // FİYAT
+        const price =
+            doc.querySelector(".product-price")?.textContent.trim() ||
+            "Bulunamadı";
 
-        // FİYAT → TARAYICIDAN ÇEK (CORS serbest)
-        let priceAPI = `https://www.sescibaba.com/srv/service/product/price/${sku}`;
-        let priceRes = await fetch(priceAPI);
-        let priceJSON = await priceRes.json();
+        // RESİM
+        const image =
+            doc.querySelector("#gallery-01 img")?.getAttribute("src") ||
+            doc.querySelector(".product-detail-images img")?.src ||
+            doc.querySelector("img")?.src ||
+            "Bulunamadı";
 
-        let price = priceJSON.PRICE || "Bulunamadı";
+        return { title, image, price };
 
-        priceInput.value = price + " TL";
-
-    } catch(e) {
-        titleInput.value = "Hata";
-        imgInput.value   = "Hata";
-        priceInput.value = "Hata";
+    } catch (error) {
+        return {
+            title: "Hata",
+            image: "Hata",
+            price: "Hata"
+        };
     }
 }
-</script>
 
-</tbody>
-</table>
+/* ============================================
+   🌟 Tabloyu oluştur (111 satır)
+   ============================================ */
+function createTable() {
+    let table = "";
+    for (let i = 1; i <= 111; i++) {
+        table += `
+        <tr>
+            <td>${i}</td>
+            <td><input id="url_${i}" placeholder="Ürün linki"></td>
+            <td><input id="title_${i}" readonly></td>
+            <td><input id="image_${i}" readonly></td>
+            <td><input id="price_${i}" readonly></td>
+        </tr>
+        `;
+    }
+    document.getElementById("rows").innerHTML = table;
+
+    // Her URL inputuna değişiklik dinleyicisi ekle
+    for (let i = 1; i <= 111; i++) {
+        document.getElementById("url_" + i).addEventListener("change", () => loadProduct(i));
+    }
+}
+
+/* ============================================
+   🌟 Tek satır ürünü çek
+   ============================================ */
+async function loadProduct(row) {
+    const url = document.getElementById("url_" + row).value.trim();
+    if (!url) return;
+
+    document.getElementById("title_" + row).value = "Yükleniyor...";
+    document.getElementById("image_" + row).value = "";
+    document.getElementById("price_" + row).value = "";
+
+    const data = await fetchProduct(url);
+
+    document.getElementById("title_" + row).value = data.title;
+    document.getElementById("image_" + row).value = data.image;
+    document.getElementById("price_" + row).value = data.price;
+}
+
+createTable();
+</script>
 
 </body>
 </html>
