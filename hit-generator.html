@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Hit Generator</title>
+
 <style>
 body { background:#0f1115; color:#fff; font-family:Arial; padding:20px; }
 h1 { text-align:center; margin-bottom:20px; color:#ff4d6d; }
@@ -15,11 +16,11 @@ textarea { width:100%; height:250px; background:#111317; color:#00ff9c; padding:
 .small { font-size:12px; opacity:0.7; margin-top:5px; }
 </style>
 </head>
+
 <body>
 
 <h1>🔥 Hit Generator – 111 Kategori İçin Otomatik Ürün Çekme</h1>
-
-<p>🔗 Backend: <b>https://sescibaba-proxy.vercel.app/api/fetch-browser?url=</b></p>
+<p>🔗 Backend: <b>Browser Fetch + AllOrigins CORS Proxy</b></p>
 
 <table id="hitTable">
 <thead>
@@ -38,13 +39,13 @@ textarea { width:100%; height:250px; background:#111317; color:#00ff9c; padding:
 
 <h3>📄 Oluşturulan hit.html İçeriği:</h3>
 <textarea id="output" readonly></textarea>
-<p class="small">Bu çıktıyı kopyalayıp GitHub’daki hit.html dosyasına yapıştıracaksın.</p>
+
 
 
 <script>
-// -----------------------------
+// --------------------------------------------------
 // 111 SATIR OLUŞTUR
-// -----------------------------
+// --------------------------------------------------
 const tbody = document.querySelector("#hitTable tbody");
 for (let i = 1; i <= 111; i++) {
     const tr = document.createElement("tr");
@@ -59,43 +60,56 @@ for (let i = 1; i <= 111; i++) {
 }
 
 
-// ----------------------------------------
-// OTOMATİK VERİ ÇEKME (Ürün Adı + Resim + Fiyat)
-// ----------------------------------------
+
+// --------------------------------------------------
+// TARAYICIDAN HTML ÇEK — Cloudflare engel yok
+// AllOrigins → CORS bypass
+// --------------------------------------------------
+
 document.addEventListener("input", async e => {
     if (!e.target.classList.contains("link")) return;
 
     const link = e.target.value.trim();
     if (!link.startsWith("http")) return;
 
-    const row = e.target.parentElement.parentElement;
+    const row = e.target.closest("tr");
 
     const nameInput  = row.querySelector(".name");
     const imgInput   = row.querySelector(".img");
     const priceInput = row.querySelector(".price");
 
-    const proxyURL = "https://sescibaba-proxy.vercel.app/api/fetch-browser?url=" + encodeURIComponent(link);
-
     nameInput.value  = "Yükleniyor...";
     imgInput.value   = "Yükleniyor...";
     priceInput.value = "Yükleniyor...";
 
+    const proxyURL = "https://api.allorigins.win/raw?url=" + encodeURIComponent(link);
+
     try {
         const html = await fetch(proxyURL).then(r => r.text());
 
-        // ✔ Ürün Başlığı (Ticimax)
+
+        // -----------------------------------------
+        // ✔ ÜRÜN ADI
+        // -----------------------------------------
         const titleMatch = html.match(/<h1[^>]*id="product-title"[^>]*>(.*?)<\/h1>/i);
         nameInput.value = titleMatch ? titleMatch[1].trim() : "Bulunamadı";
 
-        // ✔ Ana Görsel (O.webp)
+
+        // -----------------------------------------
+        // ✔ ANA GÖRSEL (O.webp)
+        // -----------------------------------------
         const imgMatch = html.match(/<img[^>]+src="(https:\/\/www\.sescibaba\.com[^"]+O\.webp)"[^>]*>/i);
         imgInput.value = imgMatch ? imgMatch[1] : "Bulunamadı";
 
-        // ✔ Fiyat
-        const priceMatch = html.match(/<span[^>]*class="product-price"[^>]*>(.*?)<\/span>/i);
+
+        // -----------------------------------------
+        // ✔ FİYAT
+        // -----------------------------------------
+        const priceMatch = html.match(/class="product-price"[^>]*>(.*?)<\/span>/i);
         priceInput.value = priceMatch ? priceMatch[1].trim() + " TL" : "Bulunamadı";
 
-    } catch(err) {
+
+    } catch (err) {
         nameInput.value  = "HATA";
         imgInput.value   = "HATA";
         priceInput.value = "HATA";
@@ -103,9 +117,11 @@ document.addEventListener("input", async e => {
 });
 
 
-// ----------------------------------------
-// hit.html HTML KODUNU ÜRET
-// ----------------------------------------
+
+// --------------------------------------------------
+// hit.html PRODUCE
+// --------------------------------------------------
+
 function generateHit() {
     let html = `<div class="hit-list">\n`;
 
@@ -119,7 +135,6 @@ function generateHit() {
     });
 
     html += `</div>`;
-
     document.querySelector("#output").value = html;
 }
 </script>
