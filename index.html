@@ -13,21 +13,33 @@ input{width:100%;padding:5px;background:#111;border:1px solid #444;color:#fff;}
 <h1>Hit Generator</h1>
 <p><b>Proxy:</b> https://test.eray-kaymaz.workers.dev/?url=</p>
 
-<table><tr><th>#</th><th>Link</th><th>Ad</th><th>Resim</th><th>Fiyat</th></tr>
-<tbody id="t"></tbody></table>
+<table>
+<tr>
+<th>#</th>
+<th>Kategori</th>
+<th>Link</th>
+<th>Ad</th>
+<th>Resim</th>
+<th>Fiyat</th>
+<th>Stok</th>
+</tr>
+<tbody id="t"></tbody>
+</table>
 
 <script>
-const p="https://test.eray-kaymaz.workers.dev/?url=",
-t=document.getElementById("t");
+const p="https://test.eray-kaymaz.workers.dev/?url=",t=document.getElementById("t");
 
 // 5 satır oluştur
 for(let i=1;i<=5;i++)
- t.innerHTML+=`<tr>
+ t.innerHTML+=`
+<tr>
 <td>${i}</td>
+<td><input id=c${i} placeholder="Kategori"></td>
 <td><input id=l${i}></td>
 <td><input id=n${i} readonly></td>
 <td><input id=i${i} readonly></td>
 <td><input id=f${i} readonly></td>
+<td><input id=s${i} readonly></td>
 </tr>`;
 
 // giriş işlemleri
@@ -36,23 +48,30 @@ document.addEventListener("input",async e=>{
  let r=e.target.id.slice(1),u=document.getElementById("l"+r).value;
  if(!u.startsWith("http"))return;
 
- ["n","i","f"].forEach(x=>document.getElementById(x+r).value="...");
+ ["n","i","f","s"].forEach(x=>document.getElementById(x+r).value="...");
 
  try{
   let h=await (await fetch(p+encodeURIComponent(u))).text(),
   d=new DOMParser().parseFromString(h,"text/html");
 
+  // Ad
   let ad=d.querySelector("#product-title");
   document.getElementById("n"+r).value=ad?ad.innerText.trim():"Yok";
 
+  // Resim
   let img=d.querySelector("img[src*='-O']");
   document.getElementById("i"+r).value=img?img.src:"Yok";
 
+  // Fiyat
   let pr=d.querySelector(".product-price");
   document.getElementById("f"+r).value=pr?pr.innerText.trim()+" TL":"Yok";
 
+  // Stok (Sepete ekle butonu var mı?)
+  let stok = d.querySelector("#add-to-cart, .add-to-cart, button[data-add-to-cart]");
+  document.getElementById("s"+r).value = stok ? "Var" : "Yok";
+
  }catch(e){
-  ["n","i","f"].forEach(x=>document.getElementById(x+r).value="Hata");
+  ["n","i","f","s"].forEach(x=>document.getElementById(x+r).value="Hata");
  }
 });
 </script>
