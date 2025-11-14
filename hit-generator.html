@@ -2,142 +2,147 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>Hit Generator</title>
+<title>Hit Generator – 111 Kategori İçin Otomatik Ürün Çekme</title>
 
 <style>
-body { background:#0f1115; color:#fff; font-family:Arial; padding:20px; }
-h1 { text-align:center; margin-bottom:20px; color:#ff4d6d; }
-table { width:100%; border-collapse:collapse; margin-bottom:20px; }
-table th, table td { border:1px solid #333; padding:8px; font-size:14px; }
-input { width:100%; padding:6px; background:#1a1d23; color:#fff; border:1px solid #333; }
-button { padding:10px 18px; background:#ff4d6d; border:none; cursor:pointer; color:#fff; font-weight:bold; border-radius:6px; }
-button:hover { background:#ff6b85; }
-textarea { width:100%; height:250px; background:#111317; color:#00ff9c; padding:10px; font-size:13px; border:none; }
-.small { font-size:12px; opacity:0.7; margin-top:5px; }
+    body {
+        background:#111;
+        color:#fff;
+        font-family: Arial;
+        padding:20px;
+    }
+    h1 {
+        text-align:center;
+        color:#ff3366;
+        margin-bottom:25px;
+    }
+    table {
+        width:100%;
+        border-collapse: collapse;
+        background:#1b1b1b;
+        font-size:14px;
+    }
+    th, td {
+        padding:10px;
+        border:1px solid #333;
+    }
+    th {
+        background:#222;
+        font-weight:bold;
+    }
+    input {
+        width:100%;
+        padding:6px;
+        border:none;
+        border-radius:4px;
+        background:#2a2a2a;
+        color:#fff;
+    }
 </style>
 </head>
-
 <body>
 
 <h1>🔥 Hit Generator – 111 Kategori İçin Otomatik Ürün Çekme</h1>
-<p>🔗 Backend: <b>Browser Fetch + AllOrigins CORS Proxy</b></p>
 
-<table id="hitTable">
+<p><b>Backend:</b> Cloudflare Worker Proxy  
+<br>🔗 <span style="color:#0f0">https://test.eray-kaymaz.workers.dev/?url=</span></p>
+
+<table>
 <thead>
 <tr>
-<th>#</th>
-<th>Ürün Linki</th>
-<th>Ürün Adı (Auto)</th>
-<th>Resim URL (Auto)</th>
-<th>Fiyat (Auto)</th>
+    <th>#</th>
+    <th>Ürün Linki</th>
+    <th>Ürün Adı (Auto)</th>
+    <th>Resim URL (Auto)</th>
+    <th>Fiyat (Auto)</th>
 </tr>
 </thead>
-<tbody></tbody>
-</table>
 
-<button onclick="generateHit()">Hit.html Oluştur</button>
-
-<h3>📄 Oluşturulan hit.html İçeriği:</h3>
-<textarea id="output" readonly></textarea>
-
-
+<tbody id="rows">
 
 <script>
-// --------------------------------------------------
-// 111 SATIR OLUŞTUR
-// --------------------------------------------------
-const tbody = document.querySelector("#hitTable tbody");
-for (let i = 1; i <= 111; i++) {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-        <td>${i}</td>
-        <td><input class="link"></td>
-        <td><input class="name"></td>
-        <td><input class="img"></td>
-        <td><input class="price"></td>
-    `;
-    tbody.appendChild(tr);
+let totalRows = 111;
+let proxy = "https://test.eray-kaymaz.workers.dev/?url=";
+
+// 👉 111 SATIR OLUŞTUR
+for (let i = 1; i <= totalRows; i++) {
+    document.write(`
+        <tr>
+            <td>${i}</td>
+            <td><input id="link${i}" placeholder="Ürün linki" onblur="fetchProduct(${i})"></td>
+            <td><input id="title${i}" placeholder="Ürün adı"></td>
+            <td><input id="img${i}" placeholder="Görsel URL"></td>
+            <td><input id="price${i}" placeholder="Fiyat"></td>
+        </tr>
+    `);
 }
 
 
+// ✔ URL'den HTML ÇEK
+async function fetchProduct(row) {
+    let link = document.getElementById("link"+row).value.trim();
+    if (!link) return;
 
-// --------------------------------------------------
-// TARAYICIDAN HTML ÇEK — Cloudflare engel yok
-// AllOrigins → CORS bypass
-// --------------------------------------------------
+    let titleInput = document.getElementById("title"+row);
+    let imgInput   = document.getElementById("img"+row);
+    let priceInput = document.getElementById("price"+row);
 
-document.addEventListener("input", async e => {
-    if (!e.target.classList.contains("link")) return;
-
-    const link = e.target.value.trim();
-    if (!link.startsWith("http")) return;
-
-    const row = e.target.closest("tr");
-
-    const nameInput  = row.querySelector(".name");
-    const imgInput   = row.querySelector(".img");
-    const priceInput = row.querySelector(".price");
-
-    nameInput.value  = "Yükleniyor...";
+    titleInput.value = "Yükleniyor...";
     imgInput.value   = "Yükleniyor...";
     priceInput.value = "Yükleniyor...";
 
-    const proxyURL = "https://api.allorigins.win/raw?url=" + encodeURIComponent(link);
-
     try {
-        const html = await fetch(proxyURL).then(r => r.text());
+        // HTML ÇEK
+        let htmlRes = await fetch(proxy + encodeURIComponent(link));
+        let htmlText = await htmlRes.text();
 
+        // DOM PARSE
+        let parser = new DOMParser();
+        let doc = parser.parseFromString(htmlText, "text/html");
 
-        // -----------------------------------------
-        // ✔ ÜRÜN ADI
-        // -----------------------------------------
-        const titleMatch = html.match(/<h1[^>]*id="product-title"[^>]*>(.*?)<\/h1>/i);
-        nameInput.value = titleMatch ? titleMatch[1].trim() : "Bulunamadı";
+        // ✔ ÜRÜN BAŞLIĞI
+        let title = doc.querySelector("#product-title")?.innerText?.trim();
+        if (!title) title = "Bulunamadı";
+        titleInput.value = title;
 
+        // ✔ ÜRÜN GÖRSELİ
+        let img = doc.querySelector(".image-inner img")?.src;
+        if (!img) img = "Bulunamadı";
+        imgInput.value = img;
 
-        // -----------------------------------------
-        // ✔ ANA GÖRSEL (O.webp)
-        // -----------------------------------------
-        const imgMatch = html.match(/<img[^>]+src="(https:\/\/www\.sescibaba\.com[^"]+O\.webp)"[^>]*>/i);
-        imgInput.value = imgMatch ? imgMatch[1] : "Bulunamadı";
+        // ✔ ÜRÜN KODU → FİYAT API
+        let sku = doc.querySelector("#supplier-product-code")?.innerText?.trim();
+        if (!sku) {
+            priceInput.value = "Kod Yok";
+            return;
+        }
 
+        // FİYAT API’DEN ÇEK
+        let priceAPI = `https://www.sescibaba.com/srv/service/product/price/${sku}`;
 
-        // -----------------------------------------
-        // ✔ FİYAT
-        // -----------------------------------------
-        const priceMatch = html.match(/class="product-price"[^>]*>(.*?)<\/span>/i);
-        priceInput.value = priceMatch ? priceMatch[1].trim() + " TL" : "Bulunamadı";
+        let apiRes = await fetch(proxy + encodeURIComponent(priceAPI));
+        let apiText = await apiRes.text();
 
+        let priceJSON = {};
+        try {
+            priceJSON = JSON.parse(apiText);
+        } catch(e) {}
+
+        let price = priceJSON.PRICE || "Bulunamadı";
+
+        priceInput.value = price + " TL";
 
     } catch (err) {
-        nameInput.value  = "HATA";
-        imgInput.value   = "HATA";
-        priceInput.value = "HATA";
+        titleInput.value = "Hata!";
+        imgInput.value   = "Hata!";
+        priceInput.value = "Hata!";
     }
-});
-
-
-
-// --------------------------------------------------
-// hit.html PRODUCE
-// --------------------------------------------------
-
-function generateHit() {
-    let html = `<div class="hit-list">\n`;
-
-    document.querySelectorAll("#hitTable tbody tr").forEach(tr => {
-        const link  = tr.querySelector(".link").value.trim();
-        const name  = tr.querySelector(".name").value.trim();
-        const img   = tr.querySelector(".img").value.trim();
-        const price = tr.querySelector(".price").value.trim();
-
-        html += `<div class="urun" data-link="${link}" data-name="${name}" data-img="${img}" data-price="${price}"></div>\n`;
-    });
-
-    html += `</div>`;
-    document.querySelector("#output").value = html;
 }
+
 </script>
+
+</tbody>
+</table>
 
 </body>
 </html>
