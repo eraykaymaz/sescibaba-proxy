@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<title>🔥 Hit Generator – Otomatik Ürün Çekme</title>
+<style>
+    body {
+        background:#000;
+        color:#fff;
+        font-family:Arial;
+        padding:20px;
+    }
+    h1 { text-align:center; color:#ff0044; }
+    table { width:100%; border-collapse:collapse; margin-top:20px; }
+    th, td {
+        border:1px solid #333;
+        padding:8px;
+        font-size:14px;
+    }
+    th { background:#111; }
+    input {
+        width:100%;
+        padding:6px;
+        background:#111;
+        border:1px solid #555;
+        color:#fff;
+    }
+</style>
+</head>
+<body>
+
+<h1>🔥 Hit Generator – Otomatik Ürün Çekme</h1>
+
+<p><b>HTML Proxy:</b> https://test.eray-kaymaz.workers.dev/?url=</p>
+
+<table>
+<tr>
+    <th>#</th>
+    <th>Ürün Linki</th>
+    <th>Ürün Adı</th>
+    <th>Resim URL</th>
+    <th>Fiyat</th>
+</tr>
+
+<tbody id="rows"></tbody>
+
+</table>
+
+<script>
+// 20 satırı otomatik oluştur
+let tbody = document.getElementById("rows");
+
+for (let i = 1; i <= 20; i++) {
+    tbody.innerHTML += `
+        <tr>
+            <td>${i}</td>
+            <td><input id="url${i}" placeholder="Ürün linki"></td>
+            <td><input id="name${i}" readonly></td>
+            <td><input id="img${i}" readonly></td>
+            <td><input id="price${i}" readonly></td>
+        </tr>
+    `;
+}
+
+// Cloudflare Worker Proxy URL
+const proxy = "https://test.eray-kaymaz.workers.dev/?url=";
+
+// Alan değişince otomatik çekme
+document.addEventListener("input", async (e) => {
+    if (!e.target.id.startsWith("url")) return;
+
+    let row = e.target.id.replace("url", "");
+    let url = document.getElementById("url"+row).value;
+
+    if (!url.includes("http")) return;
+
+    document.getElementById("name"+row).value = "Yükleniyor...";
+    document.getElementById("img"+row).value = "Yükleniyor...";
+    document.getElementById("price"+row).value = "Yükleniyor...";
+
+    try {
+        let html = await fetch(proxy + encodeURIComponent(url));
+        let text = await html.text();
+
+        // DOM parser
+        let doc = new DOMParser().parseFromString(text, "text/html");
+
+        // Ürün adı
+        let title = doc.querySelector("#product-title");
+        document.getElementById("name"+row).value =
+            title ? title.innerText.trim() : "Bulunamadı";
+
+        // Resim
+        let img = doc.querySelector("img[src*='-O.webp'], img[src*='-O.jpg']");
+        document.getElementById("img"+row).value =
+            img ? img.src : "Bulunamadı";
+
+        // Fiyat
+        let price = doc.querySelector(".product-current-price .product-price");
+        document.getElementById("price"+row).value =
+            price ? price.innerText.trim()+" TL" : "Bulunamadı";
+
+    } catch (err) {
+        document.getElementById("name"+row).value = "Hata";
+        document.getElementById("img"+row).value = "Hata";
+        document.getElementById("price"+row).value = "Hata";
+    }
+});
+</script>
+
+</body>
+</html>
