@@ -2,143 +2,102 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>Hit Generator – 111 Kategori İçin Otomatik Ürün Çekme</title>
+<title>Hit Generator – Otomatik Ürün Çekme</title>
 
 <style>
-    body {
-        background:#111;
-        color:#fff;
-        font-family: Arial;
-        padding:20px;
-    }
-    h1 {
-        text-align:center;
-        color:#ff3366;
-        margin-bottom:25px;
-    }
-    table {
-        width:100%;
-        border-collapse: collapse;
-        background:#1b1b1b;
-        font-size:14px;
-    }
-    th, td {
-        padding:10px;
-        border:1px solid #333;
-    }
-    th {
-        background:#222;
-        font-weight:bold;
-    }
-    input {
-        width:100%;
-        padding:6px;
-        border:none;
-        border-radius:4px;
-        background:#2a2a2a;
-        color:#fff;
-    }
+    body { background:#111; color:#fff; font-family:Arial; padding:20px; }
+    h1 { text-align:center; color:#ff3366; margin-bottom:25px; }
+    table { width:100%; border-collapse: collapse; background:#1b1b1b; font-size:14px; }
+    th, td { padding:10px; border:1px solid #333; }
+    th { background:#222; font-weight:bold; }
+    input { width:100%; padding:6px; border:none; border-radius:4px; background:#2a2a2a; color:#fff; }
 </style>
 </head>
 <body>
 
-<h1>🔥 Hit Generator – 111 Kategori İçin Otomatik Ürün Çekme</h1>
+<h1>🔥 Hit Generator – Otomatik Ürün Çekme</h1>
 
-<p><b>Backend:</b> Cloudflare Worker Proxy  
-<br>🔗 <span style="color:#0f0">https://test.eray-kaymaz.workers.dev/?url=</span></p>
+<p><b>HTML Proxy:</b> https://test.eray-kaymaz.workers.dev/?url=</p>
 
 <table>
 <thead>
 <tr>
     <th>#</th>
     <th>Ürün Linki</th>
-    <th>Ürün Adı (Auto)</th>
-    <th>Resim URL (Auto)</th>
-    <th>Fiyat (Auto)</th>
+    <th>Ürün Adı</th>
+    <th>Resim URL</th>
+    <th>Fiyat</th>
 </tr>
 </thead>
-
-<tbody id="rows">
+<tbody>
 
 <script>
-let totalRows = 111;
-let proxy = "https://test.eray-kaymaz.workers.dev/?url=";
+const proxy = "https://test.eray-kaymaz.workers.dev/?url=";
 
-// 👉 111 SATIR OLUŞTUR
-for (let i = 1; i <= totalRows; i++) {
+// 111 satır oluştur
+for (let i = 1; i <= 111; i++) {
     document.write(`
-        <tr>
-            <td>${i}</td>
-            <td><input id="link${i}" placeholder="Ürün linki" onblur="fetchProduct(${i})"></td>
-            <td><input id="title${i}" placeholder="Ürün adı"></td>
-            <td><input id="img${i}" placeholder="Görsel URL"></td>
-            <td><input id="price${i}" placeholder="Fiyat"></td>
-        </tr>
+    <tr>
+        <td>${i}</td>
+        <td><input id="link${i}" placeholder="Ürün linki"
+            onblur="fetchProduct(${i})"></td>
+        <td><input id="title${i}"></td>
+        <td><input id="img${i}"></td>
+        <td><input id="price${i}"></td>
+    </tr>
     `);
 }
 
-
-// ✔ URL'den HTML ÇEK
 async function fetchProduct(row) {
     let link = document.getElementById("link"+row).value.trim();
-    if (!link) return;
-
     let titleInput = document.getElementById("title"+row);
-    let imgInput   = document.getElementById("img"+row);
+    let imgInput = document.getElementById("img"+row);
     let priceInput = document.getElementById("price"+row);
+
+    if (!link) return;
 
     titleInput.value = "Yükleniyor...";
     imgInput.value   = "Yükleniyor...";
     priceInput.value = "Yükleniyor...";
 
     try {
-        // HTML ÇEK
+        // HTML Worker’dan çek
         let htmlRes = await fetch(proxy + encodeURIComponent(link));
         let htmlText = await htmlRes.text();
 
-        // DOM PARSE
         let parser = new DOMParser();
         let doc = parser.parseFromString(htmlText, "text/html");
 
-        // ✔ ÜRÜN BAŞLIĞI
+        // Ürün adı
         let title = doc.querySelector("#product-title")?.innerText?.trim();
-        if (!title) title = "Bulunamadı";
-        titleInput.value = title;
+        titleInput.value = title || "Bulunamadı";
 
-        // ✔ ÜRÜN GÖRSELİ
+        // Görsel
         let img = doc.querySelector(".image-inner img")?.src;
-        if (!img) img = "Bulunamadı";
-        imgInput.value = img;
+        imgInput.value = img || "Bulunamadı";
 
-        // ✔ ÜRÜN KODU → FİYAT API
+        // Ürün kodu
         let sku = doc.querySelector("#supplier-product-code")?.innerText?.trim();
         if (!sku) {
-            priceInput.value = "Kod Yok";
+            priceInput.value = "SKU yok";
             return;
         }
 
-        // FİYAT API’DEN ÇEK
+        // FİYAT → TARAYICIDAN ÇEK (CORS serbest)
         let priceAPI = `https://www.sescibaba.com/srv/service/product/price/${sku}`;
-
-        let apiRes = await fetch(proxy + encodeURIComponent(priceAPI));
-        let apiText = await apiRes.text();
-
-        let priceJSON = {};
-        try {
-            priceJSON = JSON.parse(apiText);
-        } catch(e) {}
+        let priceRes = await fetch(priceAPI);
+        let priceJSON = await priceRes.json();
 
         let price = priceJSON.PRICE || "Bulunamadı";
 
         priceInput.value = price + " TL";
 
-    } catch (err) {
-        titleInput.value = "Hata!";
-        imgInput.value   = "Hata!";
-        priceInput.value = "Hata!";
+    } catch(e) {
+        titleInput.value = "Hata";
+        imgInput.value   = "Hata";
+        priceInput.value = "Hata";
     }
 }
-
 </script>
 
 </tbody>
