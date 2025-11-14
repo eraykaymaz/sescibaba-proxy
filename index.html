@@ -27,9 +27,10 @@ input{width:100%;padding:5px;background:#111;border:1px solid #444;color:#fff;}
 </table>
 
 <script>
-const p="https://test.eray-kaymaz.workers.dev/?url=",t=document.getElementById("t");
+const p="https://test.eray-kaymaz.workers.dev/?url=",
+t=document.getElementById("t");
 
-// 5 satır oluştur
+// --- 5 satır oluştur ---
 for(let i=1;i<=5;i++)
  t.innerHTML+=`
 <tr>
@@ -42,7 +43,7 @@ for(let i=1;i<=5;i++)
 <td><input id=s${i} readonly></td>
 </tr>`;
 
-// giriş işlemleri
+// --- ürün çekme ---
 document.addEventListener("input",async e=>{
  if(!e.target.id.startsWith("l"))return;
  let r=e.target.id.slice(1),u=document.getElementById("l"+r).value;
@@ -54,21 +55,25 @@ document.addEventListener("input",async e=>{
   let h=await (await fetch(p+encodeURIComponent(u))).text(),
   d=new DOMParser().parseFromString(h,"text/html");
 
-  // Ad
+  // AD
   let ad=d.querySelector("#product-title");
   document.getElementById("n"+r).value=ad?ad.innerText.trim():"Yok";
 
-  // Resim
+  // RESİM
   let img=d.querySelector("img[src*='-O']");
   document.getElementById("i"+r).value=img?img.src:"Yok";
 
-  // Fiyat
+  // FİYAT
   let pr=d.querySelector(".product-price");
   document.getElementById("f"+r).value=pr?pr.innerText.trim()+" TL":"Yok";
 
-  // Stok (Sepete ekle butonu var mı?)
-  let stok = d.querySelector("#add-to-cart, .add-to-cart, button[data-add-to-cart]");
-  document.getElementById("s"+r).value = stok ? "Var" : "Yok";
+  // STOK ALGORİTMASI → FİYAT VARSA STOK VAR
+  let stok = pr ? "Var" : "Yok";
+  document.getElementById("s"+r).value = stok;
+
+  // SATIR RENGİ
+  let rowEl=document.getElementById("s"+r).parentElement.parentElement;
+  rowEl.style.background = pr ? "#111" : "#400";
 
  }catch(e){
   ["n","i","f","s"].forEach(x=>document.getElementById(x+r).value="Hata");
