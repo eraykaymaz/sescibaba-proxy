@@ -19,7 +19,7 @@ textarea { width:100%; height:250px; background:#111317; color:#00ff9c; padding:
 
 <h1>🔥 Hit Generator – 111 Kategori İçin Otomatik Ürün Çekme</h1>
 
-<p>🔗 Backend: <b>https://sescibaba-proxy.vercel.app/api/fetch?url=</b></p>
+<p>🔗 Backend: <b>https://sescibaba-proxy.vercel.app/api/fetch-browser?url=</b></p>
 
 <table id="hitTable">
 <thead>
@@ -39,6 +39,7 @@ textarea { width:100%; height:250px; background:#111317; color:#00ff9c; padding:
 <h3>📄 Oluşturulan hit.html İçeriği:</h3>
 <textarea id="output" readonly></textarea>
 <p class="small">Bu çıktıyı kopyalayıp GitHub’daki hit.html dosyasına yapıştıracaksın.</p>
+
 
 <script>
 // -----------------------------
@@ -73,7 +74,7 @@ document.addEventListener("input", async e => {
     const imgInput   = row.querySelector(".img");
     const priceInput = row.querySelector(".price");
 
-    const proxyURL = "const proxyURL = "https://sescibaba-proxy.vercel.app/api/fetch?url="=" + encodeURIComponent(link);
+    const proxyURL = "https://sescibaba-proxy.vercel.app/api/fetch-browser?url=" + encodeURIComponent(link);
 
     nameInput.value  = "Yükleniyor...";
     imgInput.value   = "Yükleniyor...";
@@ -84,18 +85,15 @@ document.addEventListener("input", async e => {
 
         // ✔ Ürün Başlığı (Ticimax)
         const titleMatch = html.match(/<h1[^>]*id="product-title"[^>]*>(.*?)<\/h1>/i);
-        if (titleMatch) nameInput.value = titleMatch[1].trim();
-        else nameInput.value = "Bulunamadı";
+        nameInput.value = titleMatch ? titleMatch[1].trim() : "Bulunamadı";
 
         // ✔ Ana Görsel (O.webp)
         const imgMatch = html.match(/<img[^>]+src="(https:\/\/www\.sescibaba\.com[^"]+O\.webp)"[^>]*>/i);
-        if (imgMatch) imgInput.value = imgMatch[1];
-        else imgInput.value = "Bulunamadı";
+        imgInput.value = imgMatch ? imgMatch[1] : "Bulunamadı";
 
         // ✔ Fiyat
         const priceMatch = html.match(/<span[^>]*class="product-price"[^>]*>(.*?)<\/span>/i);
-        if (priceMatch) priceInput.value = priceMatch[1].trim() + " TL";
-        else priceInput.value = "Bulunamadı";
+        priceInput.value = priceMatch ? priceMatch[1].trim() + " TL" : "Bulunamadı";
 
     } catch(err) {
         nameInput.value  = "HATA";
