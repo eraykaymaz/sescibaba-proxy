@@ -17,9 +17,9 @@ textarea { width:100%; height:250px; background:#111317; color:#00ff9c; padding:
 </head>
 <body>
 
-<h1>🔥 Hit Generator (111 Kategori İçin)</h1>
+<h1>🔥 Hit Generator – 111 Kategori İçin Otomatik Ürün Çekme</h1>
 
-<p>🔗 Backend Proxy: <b>https://sescibaba-proxy.vercel.app/api/fetch?url=</b></p>
+<p>🔗 Backend: <b>https://sescibaba-proxy.vercel.app/api/fetch?url=</b></p>
 
 <table id="hitTable">
 <thead>
@@ -28,20 +28,22 @@ textarea { width:100%; height:250px; background:#111317; color:#00ff9c; padding:
 <th>Ürün Linki</th>
 <th>Ürün Adı (Auto)</th>
 <th>Resim URL (Auto)</th>
+<th>Fiyat (Auto)</th>
 </tr>
 </thead>
-<tbody>
-</tbody>
+<tbody></tbody>
 </table>
 
 <button onclick="generateHit()">Hit.html Oluştur</button>
 
-<h3>📄 Oluşturulan hit.html Kodları:</h3>
+<h3>📄 Oluşturulan hit.html İçeriği:</h3>
 <textarea id="output" readonly></textarea>
-<p class="small">Hazır olunca bu çıktıyı kopyalayıp hit.html dosyasına yapıştıracaksın.</p>
+<p class="small">Bu çıktıyı kopyalayıp GitHub’daki hit.html dosyasına yapıştıracaksın.</p>
 
 <script>
-// 111 satır oluştur
+// -----------------------------
+// 111 SATIR OLUŞTUR
+// -----------------------------
 const tbody = document.querySelector("#hitTable tbody");
 for (let i = 1; i <= 111; i++) {
     const tr = document.createElement("tr");
@@ -50,61 +52,79 @@ for (let i = 1; i <= 111; i++) {
         <td><input class="link"></td>
         <td><input class="name"></td>
         <td><input class="img"></td>
+        <td><input class="price"></td>
     `;
     tbody.appendChild(tr);
 }
 
-// Otomatik veri çekme (ürün adı + resim)
+
+// ----------------------------------------
+// OTOMATİK VERİ ÇEKME (Ürün Adı + Resim + Fiyat)
+// ----------------------------------------
 document.addEventListener("input", async e => {
     if (!e.target.classList.contains("link")) return;
+
     const link = e.target.value.trim();
     if (!link.startsWith("http")) return;
 
     const row = e.target.parentElement.parentElement;
-    const nameInput = row.querySelector(".name");
-    const imgInput = row.querySelector(".img");
+
+    const nameInput  = row.querySelector(".name");
+    const imgInput   = row.querySelector(".img");
+    const priceInput = row.querySelector(".price");
 
     const proxyURL = "https://sescibaba-proxy.vercel.app/api/fetch?url=" + encodeURIComponent(link);
 
-    nameInput.value = "Yükleniyor...";
-    imgInput.value = "Yükleniyor...";
+    nameInput.value  = "Yükleniyor...";
+    imgInput.value   = "Yükleniyor...";
+    priceInput.value = "Yükleniyor...";
 
     try {
         const html = await fetch(proxyURL).then(r => r.text());
 
-        // Ürün adı bulma (Ticimax genelde <h1> kullanır)
-        const nameMatch = html.match(/<h1[^>]*>(.*?)<\/h1>/i);
-        if (nameMatch) nameInput.value = nameMatch[1].trim();
+        // ✔ Ürün Başlığı (Ticimax)
+        const titleMatch = html.match(/<h1[^>]*id="product-title"[^>]*>(.*?)<\/h1>/i);
+        if (titleMatch) nameInput.value = titleMatch[1].trim();
+        else nameInput.value = "Bulunamadı";
 
-        // Ürün görseli
-        const imgMatch = html.match(/<img[^>]+src="([^"]+)"[^>]*class="product-detail-image"/i)
-                      || html.match(/<img[^>]+src="([^"]+)"[^>]*product-image/i)
-                      || html.match(/<img[^>]+src="([^"]+)"/i);
-
+        // ✔ Ana Görsel (O.webp)
+        const imgMatch = html.match(/<img[^>]+src="(https:\/\/www\.sescibaba\.com[^"]+O\.webp)"[^>]*>/i);
         if (imgMatch) imgInput.value = imgMatch[1];
-    }
-    catch(err){
-        nameInput.value = "HATA";
-        imgInput.value = "HATA";
+        else imgInput.value = "Bulunamadı";
+
+        // ✔ Fiyat
+        const priceMatch = html.match(/<span[^>]*class="product-price"[^>]*>(.*?)<\/span>/i);
+        if (priceMatch) priceInput.value = priceMatch[1].trim() + " TL";
+        else priceInput.value = "Bulunamadı";
+
+    } catch(err) {
+        nameInput.value  = "HATA";
+        imgInput.value   = "HATA";
+        priceInput.value = "HATA";
     }
 });
 
-// Hit.html üretme
+
+// ----------------------------------------
+// hit.html HTML KODUNU ÜRET
+// ----------------------------------------
 function generateHit() {
     let html = `<div class="hit-list">\n`;
 
     document.querySelectorAll("#hitTable tbody tr").forEach(tr => {
-        const link = tr.querySelector(".link").value.trim();
-        const name = tr.querySelector(".name").value.trim();
-        const img  = tr.querySelector(".img").value.trim();
+        const link  = tr.querySelector(".link").value.trim();
+        const name  = tr.querySelector(".name").value.trim();
+        const img   = tr.querySelector(".img").value.trim();
+        const price = tr.querySelector(".price").value.trim();
 
-        html += `<div class="urun" data-link="${link}" data-img="${img}" data-name="${name}"></div>\n`;
+        html += `<div class="urun" data-link="${link}" data-name="${name}" data-img="${img}" data-price="${price}"></div>\n`;
     });
 
     html += `</div>`;
+
     document.querySelector("#output").value = html;
 }
-
 </script>
+
 </body>
 </html>
